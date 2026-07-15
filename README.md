@@ -55,7 +55,7 @@
 | 🎨 Design Studio | `screenshots/design-studio.png` |
 | 🛒 Cart | `screenshots/cart.png` |
 | 💳 Checkout | `screenshots/checkout.png` |
-| ⚙️ Admin Dashboard | `screenshots/admin.png` |
+| ⚙️ Admin Dashboard | `Images/Admin Dashboard.png` |
 
 </details>
 
@@ -486,11 +486,11 @@ Building Printora covered the full spectrum of modern web development:
 
 ## Author
 
-**Your Name**
+**Chaitanya Reddy**
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/yourprofile)
-[![GitHub](https://img.shields.io/badge/GitHub-Follow-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/yourusername)
-[![Portfolio](https://img.shields.io/badge/Portfolio-Visit-7C3AED?style=for-the-badge&logo=vercel&logoColor=white)](https://yourportfolio.dev)
+[![LinkedIn](https://www.linkedin.com/in/chaitanya-reddy-ustalamuri/)
+[![GitHub](https://github.com/chaitanyaReddy4/printora.git)
+[![Portfolio](https://chaitu.framer.website/)
 
 ---
 
@@ -501,5 +501,5 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 ---
 
 <p align="center">
-  Made with ❤️ in India &nbsp;·&nbsp; <a href="https://printora.vercel.app">printora.vercel.app</a>
+  Made with ❤️ in India &nbsp;·&nbsp; <a href="https://printora-print-store.vercel.app/">printora.vercel.app</a>
 </p>
