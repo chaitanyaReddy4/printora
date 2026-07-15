@@ -1,9 +1,35 @@
-import { Resend } from "resend";
-
-export const resend = new Resend(process.env.RESEND_API_KEY);
+/**
+ * lib/email.ts — Optional email sending via Resend.
+ *
+ * The Resend client is NEVER created at module scope.
+ * It is instantiated lazily inside each function, only when RESEND_API_KEY
+ * is present in the environment. This means:
+ *   - Build succeeds even without RESEND_API_KEY
+ *   - Vercel deployment succeeds even without RESEND_API_KEY
+ *   - All API routes continue working — emails are simply skipped with a log
+ */
 
 const FROM = process.env.EMAIL_FROM ?? "noreply@printora.in";
 const STORE = process.env.NEXT_PUBLIC_STORE_NAME ?? "Printora";
+
+/** Returns a Resend instance if the API key is configured, otherwise null. */
+function getResend() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    return null;
+  }
+  // Dynamic require keeps this off the module-init critical path
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Resend } = require("resend") as { Resend: new (key: string) => { emails: { send: (opts: unknown) => Promise<unknown> } } };
+  return new Resend(apiKey);
+}
+
+/** Log a skip message when email is not configured. */
+function logSkipped(fn: string) {
+  console.log(`Email skipped: RESEND_API_KEY not configured. (${fn})`);
+}
+
+// ─── Public email functions ───────────────────────────────────────────────────
 
 export async function sendOrderConfirmation(to: string, data: {
   orderNumber: string;
@@ -13,6 +39,8 @@ export async function sendOrderConfirmation(to: string, data: {
   shippingAddress: string;
   estimatedDelivery?: string;
 }) {
+  const resend = getResend();
+  if (!resend) { logSkipped("sendOrderConfirmation"); return; }
   return resend.emails.send({
     from: `${STORE} <${FROM}>`,
     to,
@@ -28,6 +56,8 @@ export async function sendStatusUpdate(to: string, data: {
   message: string;
   trackingUrl: string;
 }) {
+  const resend = getResend();
+  if (!resend) { logSkipped("sendStatusUpdate"); return; }
   return resend.emails.send({
     from: `${STORE} <${FROM}>`,
     to,
@@ -43,6 +73,8 @@ export async function sendBatchInvite(to: string, data: {
   deadline: string;
   submissionUrl: string;
 }) {
+  const resend = getResend();
+  if (!resend) { logSkipped("sendBatchInvite"); return; }
   return resend.emails.send({
     from: `${STORE} <${FROM}>`,
     to,
@@ -57,6 +89,8 @@ export async function sendBatchDesignReady(to: string, data: {
   designPreviewUrl: string;
   reviewUrl: string;
 }) {
+  const resend = getResend();
+  if (!resend) { logSkipped("sendBatchDesignReady"); return; }
   return resend.emails.send({
     from: `${STORE} <${FROM}>`,
     to,
@@ -73,6 +107,8 @@ export async function sendDispatchNotification(to: string, data: {
   estimatedDelivery: string;
   address: string;
 }) {
+  const resend = getResend();
+  if (!resend) { logSkipped("sendDispatchNotification"); return; }
   return resend.emails.send({
     from: `${STORE} <${FROM}>`,
     to,
@@ -81,7 +117,7 @@ export async function sendDispatchNotification(to: string, data: {
   });
 }
 
-// ─── HTML builders ───────────────────────────────────────────────────────────
+// ─── HTML builders ────────────────────────────────────────────────────────────
 
 function emailWrapper(content: string) {
   return `<!DOCTYPE html>
@@ -130,7 +166,7 @@ function buildOrderConfirmationHtml(data: Parameters<typeof sendOrderConfirmatio
   return emailWrapper(`
     <h2 style="color:#111827;margin:0 0 8px;font-size:22px;">Order Confirmed! 🎉</h2>
     <p style="color:#6B7280;margin:0 0 24px;">Hi ${data.customerName}, thank you for your order.</p>
-    
+
     <div style="background:#EDE9FE;border-radius:8px;padding:16px;margin-bottom:24px;">
       <p style="margin:0;color:#7C3AED;font-weight:600;font-size:14px;">Order Number</p>
       <p style="margin:4px 0 0;color:#111827;font-size:20px;font-weight:700;font-family:monospace;">#${data.orderNumber}</p>
@@ -151,7 +187,7 @@ function buildOrderConfirmationHtml(data: Parameters<typeof sendOrderConfirmatio
     </div>
 
     <div style="text-align:center;">
-      <a href="${process.env.NEXT_PUBLIC_APP_URL}/track" style="display:inline-block;background:#7C3AED;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:100px;font-weight:600;font-size:15px;">Track Your Order →</a>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://printora.in"}/track" style="display:inline-block;background:#7C3AED;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:100px;font-weight:600;font-size:15px;">Track Your Order →</a>
     </div>
   `);
 }
@@ -160,7 +196,7 @@ function buildStatusUpdateHtml(data: Parameters<typeof sendStatusUpdate>[1]) {
   return emailWrapper(`
     <h2 style="color:#111827;margin:0 0 8px;font-size:22px;">Order Update</h2>
     <p style="color:#6B7280;margin:0 0 24px;">Hi ${data.customerName}, here's an update on your order.</p>
-    
+
     <div style="background:#EDE9FE;border-radius:8px;padding:16px;margin-bottom:24px;">
       <p style="margin:0;color:#7C3AED;font-weight:600;font-size:14px;">Order #${data.orderNumber}</p>
       <p style="margin:8px 0 0;color:#111827;font-size:18px;font-weight:700;">${data.status.replace(/_/g, " ")}</p>
@@ -180,7 +216,7 @@ function buildBatchInviteHtml(data: Parameters<typeof sendBatchInvite>[1]) {
   return emailWrapper(`
     <h2 style="color:#111827;margin:0 0 8px;font-size:22px;">Submit Your Photo 📸</h2>
     <p style="color:#6B7280;margin:0 0 24px;">${data.organizerName} has invited you to submit your photo for <strong>${data.batchTitle}</strong>.</p>
-    
+
     <div style="background:#F9FAFB;border-radius:8px;padding:16px;margin-bottom:24px;">
       <p style="margin:0;"><strong>Product:</strong> ${data.productType}</p>
       <p style="margin:8px 0 0;"><strong>Deadline:</strong> ${data.deadline}</p>
@@ -200,7 +236,7 @@ function buildBatchDesignReadyHtml(data: Parameters<typeof sendBatchDesignReady>
   return emailWrapper(`
     <h2 style="color:#111827;margin:0 0 8px;font-size:22px;">Your Design Is Ready! ✅</h2>
     <p style="color:#6B7280;margin:0 0 24px;">Hi ${data.organizerName}, your batch design for <strong>${data.batchTitle}</strong> is ready for review.</p>
-    
+
     ${data.designPreviewUrl ? `<div style="text-align:center;margin-bottom:24px;"><img src="${data.designPreviewUrl}" alt="Design Preview" style="max-width:100%;border-radius:8px;border:1px solid #E5E7EB;" /></div>` : ""}
 
     <div style="text-align:center;">
@@ -213,7 +249,7 @@ function buildDispatchHtml(data: Parameters<typeof sendDispatchNotification>[1])
   return emailWrapper(`
     <h2 style="color:#111827;margin:0 0 8px;font-size:22px;">Your Order Is On Its Way! 🚚</h2>
     <p style="color:#6B7280;margin:0 0 24px;">Hi ${data.customerName}, order #${data.orderNumber} has been dispatched.</p>
-    
+
     <div style="background:#F9FAFB;border-radius:8px;padding:16px;margin-bottom:24px;">
       <p style="margin:0;"><strong>Courier:</strong> ${data.courierName}</p>
       <p style="margin:8px 0;"><strong>Tracking Number:</strong> <span style="font-family:monospace;color:#7C3AED;">${data.trackingNumber}</span></p>
@@ -226,7 +262,7 @@ function buildDispatchHtml(data: Parameters<typeof sendDispatchNotification>[1])
     </div>
 
     <div style="text-align:center;">
-      <a href="${process.env.NEXT_PUBLIC_APP_URL}/track" style="display:inline-block;background:#7C3AED;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:100px;font-weight:600;font-size:15px;">Track Shipment →</a>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://printora.in"}/track" style="display:inline-block;background:#7C3AED;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:100px;font-weight:600;font-size:15px;">Track Shipment →</a>
     </div>
   `);
 }
