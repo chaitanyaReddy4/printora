@@ -33,8 +33,8 @@
 
 | Resource | Link |
 |---|---|
-| 🌐 Live Demo | [printora.vercel.app](https://printora.vercel.app) |
-| 💻 Repository | [github.com/yourusername/printora](https://github.com/yourusername/printora) |
+| 🌐 Live Demo | [printora.vercel.app](https://printora-print-store.vercel.app/) |
+| 💻 Repository | [github.com/chaitanyareddy4/printora](https://github.com/chaitanyaReddy4/printora.git) |
 
 > **Note**
 > Use the demo credentials to explore the platform:
