@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model User {
+  id           String       @id @default(cuid())
+  name         String
+  email        String       @unique
+  phone        String?
+  passwordHash String?
+  image        String?
+  role         Role         @default(CUSTOMER)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  orders       Order[]
+  batches      BatchOrder[]
+  addresses    Address[]
+  accounts     Account[]
+  sessions     Session[]
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  description String
+  category    Category
+  basePrice   Float
+  images      String[]
+  mockupImage String
+  sizes       String[]
+  colors      Json
+  printAreas  Json
+  minQuantity Int         @default(1)
+  bulkPricing Json?
+  isActive    Boolean     @default(true)
+  isFeatured  Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orderItems  OrderItem[]
+}
+
+enum Category {
+  TSHIRT
+  HOODIE
+  POLO
+  CAP
+  MUG
+  BANNER
+  FLEX
+  VISITING_CARD
+  FLYER
+  POSTER
+  STICKER
+  NOTEBOOK
+  OTHER
+}
+
+model Order {
+  id                String         @id @default(cuid())
+  orderNumber       String         @unique
+  user              User?          @relation(fields: [userId], references: [id])
+  userId            String?
+  guestEmail        String?
+  guestPhone        String?
+  items             OrderItem[]
+  status            OrderStatus    @default(PENDING)
+  totalAmount       Float
+  shippingAmount    Float          @default(0)
+  discountAmount    Float          @default(0)
+  shippingAddress   Json
+  paymentId         String?
+  paymentStatus     PaymentStatus  @default(UNPAID)
+  promoCode         String?
+  notes             String?
+  trackingNumber    String?
+  courierName       String?
+  estimatedDelivery DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  timeline          OrderTimeline[]
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  DESIGN_REVIEW
+  IN_PRODUCTION
+  QUALITY_CHECK
+  DISPATCHED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+  FAILED
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  order      Order   @relation(fields: [orderId], references: [id])
+  orderId    String
+  product    Product @relation(fields: [productId], references: [id])
+  productId  String
+  quantity   Int
+  size       String?
+  color      String?
+  designUrl  String?
+  previewUrl String?
+  designData Json?
+  printSide  String?
+  customText String?
+  unitPrice  Float
+  notes      String?
+}
+
+model OrderTimeline {
+  id        String      @id @default(cuid())
+  order     Order       @relation(fields: [orderId], references: [id])
+  orderId   String
+  status    OrderStatus
+  message   String
+  createdAt DateTime    @default(now())
+}
+
+model BatchOrder {
+  id             String            @id @default(cuid())
+  batchCode      String            @unique
+  title          String
+  description    String?
+  organizer      User              @relation(fields: [userId], references: [id])
+  userId         String
+  productType    String
+  layoutId       String            @default("grid-4x4")
+  expectedCount  Int
+  deadline       DateTime
+  status         BatchStatus       @default(COLLECTING)
+  finalDesignUrl String?
+  submissions    BatchSubmission[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+enum BatchStatus {
+  COLLECTING
+  DESIGNING
+  REVIEW
+  ORDERED
+  COMPLETED
+}
+
+model BatchSubmission {
+  id          String     @id @default(cuid())
+  batch       BatchOrder @relation(fields: [batchId], references: [id])
+  batchId     String
+  name        String
+  rollNumber  String?
+  photoUrl    String
+  isApproved  Boolean    @default(true)
+  submittedAt DateTime   @default(now())
+}
+
+model Address {
+  id        String  @id @default(cuid())
+  user      User    @relation(fields: [userId], references: [id])
+  userId    String
+  label     String  @default("Home")
+  fullName  String
+  phone     String
+  line1     String
+  line2     String?
+  city      String
+  state     String
+  pincode   String
+  isDefault Boolean @default(false)
+}
+
+model PromoCode {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  discountType  String
+  discountValue Float
+  minOrderValue Float     @default(0)
+  maxUses       Int?
+  usedCount     Int       @default(0)
+  isActive      Boolean   @default(true)
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+}
